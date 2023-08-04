@@ -1,0 +1,255 @@
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <cstdlib> //needed for exit()
+#include <chrono>  //needed to find system time
+#include <cmath>
+#include<iomanip>
+using namespace std;
+struct new_acc
+{
+  char name[20], sex[5];
+  int age, amount, id;
+  long account_no;
+} acc;
+double intial_deposite()
+{
+a:
+  cout << "enter the number of money you want to deposite: ";
+  int min = 25;    //threshold money
+  cin >> acc.amount;
+  if (acc.amount < min)
+  {
+    cout << "you can't save below minimum amount\nplease add some money\n";
+    goto a;
+  }
+  else
+    return acc.amount;
+}
+void open_out_file(ofstream &ofile)
+{
+  string name = "projectFile.dat";
+  ofile.open(name.c_str(), ios::app); 
+  if (ofile.fail())
+  {
+    cout << "failed to open the file named " << name << endl;
+    exit(1);
+  }
+  else
+    return;
+}
+void out_file(ofstream &my_file)
+{
+  open_out_file(my_file);
+  char check;
+  do
+  {
+    cout << "enter the account number\n"; 
+    cin >> acc.account_no;
+    cout << "enter ID: ";
+    cin >> acc.id;
+    cout << "enter the name: ";
+    cin >> acc.name; 
+    cout << "enter the sex: ";
+    cin >> acc.sex;
+    cout << "enter the age: ";
+    cin >> acc.age;
+    my_file << acc.account_no << " " << acc.id << " " << acc.name << " " << acc.sex << " " << acc.age
+            << " " << intial_deposite() << " " << endl;
+    cout << "do you want to record again\n write 'y/n'..\n";
+    cin >> check;
+  } while (check == 'Y' || check == 'y');
+  cout << "account created successfully\n";
+  my_file.close();
+  return;
+}
+void open_input_file(ifstream &filein, ofstream &fileout)
+{
+  string name = "projectFile.dat", temp = "temp.dat";
+  fileout.open(temp.c_str(), ios::out);
+  if (fileout.fail())
+  {
+    cout << "failed to open the file named " << temp << endl;
+    exit(1);
+  }
+  filein.open(name.c_str(), ios::in);
+  if (filein.fail())
+  {
+    cout << "failed to open the file named " << name << endl;
+    exit(1);
+  }
+  return;
+}
+void input_file(ifstream &ifile, ofstream &ofile)
+{
+  open_input_file(ifile, ofile);
+  char account[15], name[15], age[15], sex[5], new_acc_no[15], choice;//since strcmp() requiers string array
+  int id, deposite, new_m;
+  cout << "enter account number\n";
+  cin >> new_acc_no;
+  while (ifile >> account >> id >> name >> sex >> age >> deposite)
+  {
+    if (strncmp(account, new_acc_no, strlen(new_acc_no)) == 0)
+    {
+    d:
+      cout << "enter 'd' to deposite or 'w' to withdraw\n";
+      cin >> choice;
+      if (choice == 'd' || choice == 'D')
+      {
+        cout << "enter the money you want to deposite\n";
+        cin >> new_m;
+        deposite += new_m;
+      }
+      else if (choice == 'w' || choice == 'W')
+      {
+      c:
+        cout << "enter the money you want to withdraw\n";
+        cin >> new_m;
+        if (new_m > deposite)
+        {
+          cout << "insufficient money to withdraw\n";
+          goto c;
+        }
+        else
+          deposite -= new_m;
+      }
+      else
+      {
+        cout << "error! ";
+        goto d;
+      }
+    }
+    ofile << account << " " << id << " " << name << " " << sex << " " << age << " " << deposite << endl;
+  }
+  ifile.close();
+  ofile.close();
+  // to copy the files from temp.txt to project.txt
+  ofile.open("projectFile.dat", ios::out);
+  ifile.open("temp.dat", ios::in);
+  while (ifile >> account >> id >> name >> sex >> age >> deposite)
+  {
+    ofile << account << setw(10) << id << setw(10) << name << setw(10)<< sex << setw(10) << age << setw(10) << deposite << endl;
+  }
+  ifile.close();
+  ofile.close();
+  remove("temp.dat");
+  if (choice == 'd' || choice == 'D')
+    cout << "\nthe deposite is done succcessfully\n";
+  else
+    cout << "\nthe withdraw is done succcessfully\n";
+  return;
+}
+// void mobil_banking(){
+
+// }
+
+void interest_calcu(ifstream &ifile, ofstream &ofile)
+{
+  auto start = chrono::system_clock::now();
+  char account[15], name[15], age[15], sex[5], new_acc_no[15], choice;
+  int id, deposite, new_m;
+  cout << "enter account number\n";
+  cin >> new_acc_no;
+  ifile.open("projectFile.dat", ios::in);
+  if (ifile.fail())
+  {
+    cout << "failur to open\n";
+    exit(1);
+  }
+  ofile.open("temp.dat", ios::out);
+  if (ifile.fail())
+  {
+    cout << "failur to open\n";
+    exit(1);
+  }
+  double interest, rate = 0.7, year; // we assume the CBE's interest rate amount.we can also enter manually
+  while (ifile >> account >> id >> name >> sex >> age >> deposite)
+  {
+    if (strncmp(account, new_acc_no, strlen(new_acc_no)) == 0)
+    {
+      auto end = chrono::system_clock::now();
+      auto duration = end - start;
+      year = (double)(duration.count() % 10); // it assumes the system delay time as the time of the deposite
+      interest = deposite * pow(1 + rate, year);
+      deposite += interest;
+      cout << "the interest you find within " << year << " year is " << interest << endl;
+    }
+    ofile << account << " " << id << " " << name << " " << sex << " " << age << " " << deposite << endl;
+  }
+  ifile.close();
+  ofile.close();
+  // to copy the files from temp.txt to project.txt
+  ofile.open("projectFile.dat", ios::out);
+  ifile.open("temp.dat", ios::in);
+  while (ifile >> account >> id >> name >> sex >> age >> deposite)
+  {
+    ofile << account << " " << id << " " << name << " " << sex << " " << age << " " << deposite << endl;
+  }
+  ifile.close();
+  ofile.close();
+  remove("temp.dat");
+  return;
+}
+
+void display(ifstream &ifile)
+{
+  ifile.open("projectFile.dat");
+  if (ifile.fail())
+  {
+    cout << "failur to open\n";
+    exit(1);
+  }
+  char account[15], name[15], age[15], sex[5], new_acc_no[15], choice;
+  int id, deposite, new_m;
+  cout << "enter account number\n";
+  cin >> new_acc_no;
+  while (ifile >> account >> id >> name >> sex >> age >> deposite)
+  {
+    if (strncmp(account, new_acc_no, strlen(new_acc_no)) == 0)
+    {
+      cout << "Account: " << account << "\nID: " << id << "\nName: " << name << "\nSex: " << sex << "\nAge: " << age << "\nDeposite: " << deposite << endl;
+    }
+  }
+  ifile.close();
+}
+
+int main()
+{
+
+  int choice;
+  ifstream i_file;
+  ofstream o_file;
+  do
+  {
+    cout << "*********  Bank System Menu:    *******\n\n";
+    cout << "1. Create Account\n"<<"2. Deposit or Withdraw\n"<< "3.  Calculate Interest\n" << "4.\n"<<
+        "5. Display Account Balance"<< "6. Exit" << endl;
+    cout << "Enter your choice: ";
+    cin >> choice;
+    switch (choice)
+    {
+    case 1:
+      out_file(o_file);
+      break;
+    case 2:
+      input_file(i_file, o_file);
+      break;
+    case 3:
+     interest_calcu(i_file, o_file);
+      break;
+    case 4:
+      cout<<"to be programmed\n";
+      break;
+    case 5:
+      display(i_file);
+      break;
+    case 6:
+      cout << "Exiting the program. Thank you for using our bank system!" << endl;
+      return 0;
+    default:
+      cout << "Invalid choice. Please try again." << endl;
+    }
+  } while (choice != 6);
+
+  return 0;
+}
